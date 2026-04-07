@@ -7,7 +7,7 @@ public void applyMaliWorkarounds(Map<String, String> envVars) {
         
         // 1. Force BCn texture decompression for Mali (crucial for newer titles)
         envVars.put("MESA_VK_WSI_PRESENT_MODE", "mailbox");
-        envVars.put("MESA_EXTENSION_MAX_YEAR", "2003"); // Helps with older DX9 games
+        envVars.put("MESA_EXTENSION_MAX_YEAR", "2009"); // Helps with older DX11 games
         
         // 2. Vortek specific config (if using Vortek driver)
         // Often used to redirect Vulkan calls on Mali GPUs
@@ -17,4 +17,3 @@ public void applyMaliWorkarounds(Map<String, String> envVars) {
         // For example, disabling "Vulcan extended dynamic state" in some builds
     }
 }
-
