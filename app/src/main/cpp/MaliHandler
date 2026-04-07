@@ -1,1 +1,20 @@
+// Logic often placed in ContainerConfig or Driver Manager
+public void applyMaliWorkarounds(Map<String, String> envVars) {
+    String renderer = Build.HARDWARE.toLowerCase();
+    
+    // Check if the device is running a Mali GPU
+    if (renderer.contains("mali") || renderer.contains("dimensity") || renderer.contains("exynos")) {
+        
+        // 1. Force BCn texture decompression for Mali (crucial for newer titles)
+        envVars.put("MESA_VK_WSI_PRESENT_MODE", "mailbox");
+        envVars.put("MESA_EXTENSION_MAX_YEAR", "2003"); // Helps with older DX9 games
+        
+        // 2. Vortek specific config (if using Vortek driver)
+        // Often used to redirect Vulkan calls on Mali GPUs
+        envVars.put("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/vortek_icd.json");
+        
+        // 3. Disable certain extensions known to crash Mali
+        // For example, disabling "Vulcan extended dynamic state" in some builds
+    }
+}
 
