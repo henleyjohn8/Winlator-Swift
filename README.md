@@ -41,6 +41,7 @@ This project has been in constant development since version 0.0, the current app
 - DXVK ([github.com/doitsujin/dxvk](https://github.com/doitsujin/dxvk))
 - VKD3D ([gitlab.winehq.org/wine/vkd3d](https://gitlab.winehq.org/wine/vkd3d))
 - CNC DDraw ([github.com/FunkyFr3sh/cnc-ddraw](https://github.com/FunkyFr3sh/cnc-ddraw))
+- Winlator Swift is a fork of the original project winlator we thank the orignal developers for theyre work
 
 Special thanks to all the developers involved in these projects.<br>
 Thank you to all the people who believe in this project.
