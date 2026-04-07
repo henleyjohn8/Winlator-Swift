@@ -1,19 +1,189 @@
-// Logic often placed in ContainerConfig or Driver Manager
-public void applyMaliWorkarounds(Map<String, String> envVars) {
-    String renderer = Build.HARDWARE.toLowerCase();
-    
-    // Check if the device is running a Mali GPU
-    if (renderer.contains("mali") || renderer.contains("dimensity") || renderer.contains("exynos")) {
-        
-        // 1. Force BCn texture decompression for Mali (crucial for newer titles)
-        envVars.put("MESA_VK_WSI_PRESENT_MODE", "mailbox");
-        envVars.put("MESA_EXTENSION_MAX_YEAR", "2009"); // Helps with older DX11 games
-        
-        // 2. Vortek specific config (if using Vortek driver)
-        // Often used to redirect Vulkan calls on Mali GPUs
-        envVars.put("VK_ICD_FILENAMES", "/usr/share/vulkan/icd.d/vortek_icd.json");
-        
-        // 3. Disable certain extensions known to crash Mali
-        // For example, disabling "Vulcan extended dynamic state" in some builds
+package com.everythingtested.winlator.core;
+
+import android.opengl.GLES20;
+import java.util.HashMap;
+import java.util.Map;
+
+public class WinlatorCoreEngine {
+
+    // --------------------------------------------
+    // PERFORMANCE TIERS
+    // --------------------------------------------
+    public enum PerformanceTier {
+        LEGACY,
+        LOW,
+        MID,
+        HIGH,
+        ENTHUSIAST
+    }
+
+    private PerformanceTier currentTier;
+    private boolean fallbackActive = false;
+
+    private static final long FRAME_SPIKE_MS = 40;
+    private static final long VRAM_THRESHOLD_MB = 900;
+
+    private Map<String, String> envVars = new HashMap<>();
+
+    // --------------------------------------------
+    // INITIALIZATION
+    // --------------------------------------------
+    public WinlatorCoreEngine() {
+        currentTier = detectTier();
+        applyBaseProfile();
+        applyVendorFixes();
+    }
+
+    // --------------------------------------------
+    // GPU DETECTION
+    // --------------------------------------------
+    private String getGPU() {
+        String gpu = GLES20.glGetString(GLES20.GL_RENDERER);
+        return gpu != null ? gpu.toLowerCase() : "unknown";
+    }
+
+    private boolean isMali() {
+        return getGPU().contains("mali");
+    }
+
+    private boolean isAdreno() {
+        return getGPU().contains("adreno");
+    }
+
+    private PerformanceTier detectTier() {
+
+        String gpu = getGPU();
+
+        if (gpu.contains("mali-400") || gpu.contains("mali-450"))
+            return PerformanceTier.LEGACY;
+
+        if (gpu.contains("g52") || gpu.contains("adreno 5"))
+            return PerformanceTier.LOW;
+
+        if (gpu.contains("g76") || gpu.contains("adreno 6"))
+            return PerformanceTier.MID;
+
+        if (gpu.contains("g78") || gpu.contains("adreno 7"))
+            return PerformanceTier.HIGH;
+
+        return PerformanceTier.ENTHUSIAST;
+    }
+
+    // --------------------------------------------
+    // BASE PROFILE
+    // --------------------------------------------
+    private void applyBaseProfile() {
+
+        switch (currentTier) {
+
+            case LEGACY:
+                envVars.put("DXVK_NUM_DESCRIPTOR_SETS", "32");
+                envVars.put("DXVK_MAX_FRAMES", "1");
+                envVars.put("DXVK_ASYNC", "0");
+                envVars.put("MESA_SHADER_CACHE_MAX_SIZE", "32M");
+                break;
+
+            case LOW:
+                envVars.put("DXVK_NUM_DESCRIPTOR_SETS", "64");
+                envVars.put("DXVK_MAX_FRAMES", "1");
+                envVars.put("DXVK_ASYNC", "0");
+                break;
+
+            case MID:
+                envVars.put("DXVK_NUM_DESCRIPTOR_SETS", "128");
+                envVars.put("DXVK_MAX_FRAMES", "2");
+                break;
+
+            case HIGH:
+                envVars.put("DXVK_NUM_DESCRIPTOR_SETS", "256");
+                envVars.put("DXVK_MAX_FRAMES", "2");
+                break;
+
+            case ENTHUSIAST:
+                envVars.put("DXVK_MAX_FRAMES", "3");
+                break;
+        }
+    }
+
+    // --------------------------------------------
+    // VENDOR FIXES
+    // --------------------------------------------
+    private void applyVendorFixes() {
+
+        if (isMali()) {
+            envVars.put("DXVK_MAX_FRAMES", "1");
+            envVars.put("DXVK_ASYNC", "0");
+            envVars.put("MESA_VK_WSI_PRESENT_MODE", "fifo");
+            envVars.put("VKD3D_CONFIG", "force_host_cached");
+            envVars.put("MESA_SHADER_CACHE_MAX_SIZE", "64M");
+        }
+
+        if (isAdreno()) {
+            envVars.put("DXVK_ASYNC", "1");
+            envVars.put("DXVK_MAX_FRAMES", "2");
+        }
+    }
+
+    // --------------------------------------------
+    // GAME YEAR OVERRIDE (OPTIONAL)
+    // --------------------------------------------
+    public void applyGameYearOverride(String gameExe) {
+
+        Map<String, Integer> gameReleaseYears = new HashMap<>();
+        gameReleaseYears.put("spiderman2.exe", 2023);
+        gameReleaseYears.put("gta5.exe", 2015);
+
+        Integer year = gameReleaseYears.get(gameExe);
+
+        if (year != null && year >= 2020) {
+            envVars.put("DXVK_NUM_DESCRIPTOR_SETS", "64");
+            envVars.put("DXVK_MAX_FRAMES", "1");
+            envVars.put("DXVK_ASYNC", "0");
+            envVars.put("DXVK_RESOLUTION_SCALE", "0.8");
+            System.out.println("Applied compatibility profile for modern title.");
+        }
+    }
+
+    // --------------------------------------------
+    // RUNTIME MONITOR
+    // --------------------------------------------
+    public void monitorRuntime(long frameTimeMs, long vramUsageMB) {
+
+        if (!fallbackActive &&
+                (frameTimeMs > FRAME_SPIKE_MS ||
+                 vramUsageMB > VRAM_THRESHOLD_MB)) {
+
+            activateFallbackMode();
+        }
+    }
+
+    // --------------------------------------------
+    // FALLBACK MODE (Your “2018 Mode”)
+    // --------------------------------------------
+    private void activateFallbackMode() {
+
+        fallbackActive = true;
+
+        envVars.put("DXVK_NUM_DESCRIPTOR_SETS", "32");
+        envVars.put("DXVK_MAX_FRAMES", "1");
+        envVars.put("DXVK_ASYNC", "0");
+        envVars.put("DXVK_RESOLUTION_SCALE", "0.75");
+
+        System.out.println("⚠ Fallback graphics mode activated.");
+    }
+
+    // --------------------------------------------
+    // GET FINAL ENVIRONMENT
+    // --------------------------------------------
+    public Map<String, String> getEnvironment() {
+        return envVars;
+    }
+
+    public PerformanceTier getCurrentTier() {
+        return currentTier;
+    }
+
+    public boolean isFallbackActive() {
+        return fallbackActive;
     }
 }
