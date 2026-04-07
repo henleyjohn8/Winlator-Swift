@@ -2,13 +2,13 @@
 	<img src="logo.png" width="376" height="128" alt="Winlator Logo" />
 </p>
 
-# Winlator
+# Winlator Swift
 
-Winlator is an Android application that lets you to run Windows (x86_64) applications with Wine and Box86/Box64.
+Winlator Swift is an Android application that lets you to run Windows (x86_64) applications with Wine and Box86/Box64.
 
 # Installation
 
-1. Download and install the APK (Winlator_10.1.apk) from [GitHub Releases](https://github.com/brunodev85/winlator/releases)
+1. Download and install the APK (Winlator_Swift_0.01.apk) from [GitHub Releases](https://github.com/henleyjohn8/Winlator-Swift/releases)
 2. Launch the app and wait for the installation process to finish
 
 ----
@@ -31,7 +31,7 @@ Winlator is an Android application that lets you to run Windows (x86_64) applica
 
 # Information
 
-This project has been in constant development since version 1.0, the current app source code is up to version 7.1, I do not update this repository frequently precisely to avoid unofficial releases before the official releases of Winlator.
+This project has been in constant development since version 0.0, the current app source code is up to version 0.01, I do not update this repository frequently precisely to avoid unofficial releases before the official releases of Winlator.
 
 # Credits and Third-party apps
 - GLIBC Patches by [Termux Pacman](https://github.com/termux-pacman/glibc-packages)
